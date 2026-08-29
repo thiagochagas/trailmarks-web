@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import type { Destino, InteresseViagem, Perfil, Viagem } from "@/lib/domain/types";
 import { INTERESSES } from "@/lib/domain/types";
 import { LABEL_INTERESSE, LABEL_CONTINENTE } from "@/lib/domain/enums";
-import { TODOS_PAISES } from "@/lib/domain/paises";
+import { TODOS_PAISES, paisPorCca2 } from "@/lib/domain/paises";
 import { sugerirPorInteresse, cobrirPorContinente } from "@/lib/domain/sugestoes";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
@@ -44,7 +44,22 @@ export function SugestoesView({
     [paisesVisitados]
   );
 
-  const wishlist = viagens.filter((v) => v.status === "desejo");
+  const wishlistPorContinente = useMemo(() => {
+    const itens = viagens.filter((v) => v.status === "desejo");
+    const grupos = new Map<string, Viagem[]>();
+    for (const v of itens) {
+      const continente = paisPorCca2(v.codigoPais)?.continente ?? "Outro";
+      const lista = grupos.get(continente) ?? [];
+      lista.push(v);
+      grupos.set(continente, lista);
+    }
+    for (const lista of grupos.values()) {
+      lista.sort((a, b) => a.nomePais.localeCompare(b.nomePais, "pt-BR"));
+    }
+    return Array.from(grupos.entries()).sort((a, b) =>
+      (LABEL_CONTINENTE[a[0]] ?? a[0]).localeCompare(LABEL_CONTINENTE[b[0]] ?? b[0], "pt-BR")
+    );
+  }, [viagens]);
 
   async function alternarInteresse(tag: InteresseViagem) {
     const atualizados = interesses.includes(tag)
@@ -196,35 +211,50 @@ export function SugestoesView({
           + Adicionar
         </Button>
 
-        {wishlist.length === 0 ? (
+        {wishlistPorContinente.length === 0 ? (
           <p className="text-sm text-muted-foreground">Sua wishlist está vazia.</p>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {wishlist.map((v) => (
-              <Card key={v.id}>
-                <CardContent className="space-y-2 py-4">
-                  <p className="font-medium">
-                    {v.cidade ? `${v.cidade}, ` : ""}
-                    {v.nomePais}
-                  </p>
-                  {v.observacoes && <p className="text-sm text-muted-foreground">{v.observacoes}</p>}
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setItemEditando(v);
-                        setWishlistAberta(true);
-                      }}
-                    >
-                      Editar
-                    </Button>
-                    <Button size="sm" variant="destructive" onClick={() => removerDaWishlist(v.id)}>
-                      Remover
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+          <div className="space-y-6">
+            {wishlistPorContinente.map(([continente, itens]) => (
+              <div key={continente} className="space-y-3">
+                <h3 className="text-sm font-semibold text-muted-foreground">
+                  {LABEL_CONTINENTE[continente] ?? continente}
+                </h3>
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {itens.map((v) => (
+                    <Card key={v.id}>
+                      <CardContent className="space-y-2 py-4">
+                        <p className="font-medium">
+                          {v.cidade ? `${v.cidade}, ` : ""}
+                          {v.nomePais}
+                        </p>
+                        {v.observacoes && (
+                          <p className="text-sm text-muted-foreground">{v.observacoes}</p>
+                        )}
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setItemEditando(v);
+                              setWishlistAberta(true);
+                            }}
+                          >
+                            Editar
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => removerDaWishlist(v.id)}
+                          >
+                            Remover
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         )}
