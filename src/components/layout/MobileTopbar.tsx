@@ -11,6 +11,7 @@ const LINKS = [
   { href: "/viagens", label: "Minhas Viagens" },
   { href: "/pessoas", label: "Pessoas" },
   { href: "/mapa", label: "Mapa" },
+  { href: "/galeria", label: "Galeria" },
   { href: "/sugestoes", label: "Sugestões" },
 ];
 
