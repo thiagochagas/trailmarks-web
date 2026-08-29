@@ -2,8 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { ComposableMap, Geographies, Geography, Marker } from "react-simple-maps";
-import { MapPin } from "lucide-react";
+import { MapPin, Star } from "lucide-react";
 import { ccn3PorCca2 } from "@/lib/domain/paises";
+import { LABEL_STATUS } from "@/lib/domain/enums";
 import { formatarIntervalo } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import {
@@ -20,7 +21,7 @@ export interface MarcadorMapa {
   nomePais: string;
   latitude: number;
   longitude: number;
-  status: "realizada" | "planejada";
+  status: "realizada" | "planejada" | "desejo";
   dataInicio: string | null;
   dataFim: string | null;
   observacoes: string | null;
@@ -68,19 +69,30 @@ export function WorldMap({ paisesVisitados, marcadores }: WorldMapProps) {
               coordinates={[m.longitude, m.latitude]}
               onClick={() => setSelecionado(m)}
             >
-              <MapPin
-                width={24}
-                height={24}
-                x={-12}
-                y={-24}
-                className={cn(
-                  "cursor-pointer drop-shadow-md stroke-white",
-                  m.status === "realizada"
-                    ? "fill-orange-500 text-orange-500"
-                    : "fill-violet-500 text-violet-500"
-                )}
-                strokeWidth={1.5}
-              />
+              {m.status === "desejo" ? (
+                <Star
+                  width={14}
+                  height={14}
+                  x={-7}
+                  y={-7}
+                  className="cursor-pointer fill-amber-400 text-amber-500 drop-shadow-md"
+                  strokeWidth={1.5}
+                />
+              ) : (
+                <MapPin
+                  width={24}
+                  height={24}
+                  x={-12}
+                  y={-24}
+                  className={cn(
+                    "cursor-pointer drop-shadow-md stroke-white",
+                    m.status === "realizada"
+                      ? "fill-orange-500 text-orange-500"
+                      : "fill-violet-500 text-violet-500"
+                  )}
+                  strokeWidth={1.5}
+                />
+              )}
             </Marker>
           ))}
         </ComposableMap>
@@ -98,6 +110,9 @@ export function WorldMap({ paisesVisitados, marcadores }: WorldMapProps) {
         </span>
         <span className="flex items-center gap-1.5">
           <MapPin className="size-3.5 fill-violet-500 text-violet-500" /> Planejada
+        </span>
+        <span className="flex items-center gap-1.5">
+          <Star className="size-3.5 fill-amber-400 text-amber-500" /> Quero ir
         </span>
       </div>
 
@@ -123,12 +138,22 @@ export function WorldMap({ paisesVisitados, marcadores }: WorldMapProps) {
                 </DialogTitle>
               </DialogHeader>
               <div className="space-y-2">
-                <Badge variant={selecionado.status === "realizada" ? "default" : "secondary"}>
-                  {selecionado.status === "realizada" ? "Já fui" : "Planejada"}
+                <Badge
+                  variant={
+                    selecionado.status === "realizada"
+                      ? "default"
+                      : selecionado.status === "planejada"
+                        ? "secondary"
+                        : "outline"
+                  }
+                >
+                  {LABEL_STATUS[selecionado.status]}
                 </Badge>
-                <p className="text-sm text-muted-foreground">
-                  {formatarIntervalo(selecionado.dataInicio, selecionado.dataFim)}
-                </p>
+                {selecionado.status !== "desejo" && (
+                  <p className="text-sm text-muted-foreground">
+                    {formatarIntervalo(selecionado.dataInicio, selecionado.dataFim)}
+                  </p>
+                )}
                 {selecionado.observacoes && (
                   <p className="text-sm">{selecionado.observacoes}</p>
                 )}

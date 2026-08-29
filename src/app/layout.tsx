@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { MobileTopbar } from "@/components/layout/MobileTopbar";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -31,11 +32,14 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <TooltipProvider>
-            <div className="flex min-h-screen">
+            <div className="flex min-h-screen flex-col md:flex-row">
               <Sidebar />
-              <main className="flex-1 min-w-0 px-4 py-6 md:px-8 md:py-8">
-                {children}
-              </main>
+              <div className="flex min-w-0 flex-1 flex-col">
+                <MobileTopbar />
+                <main className="flex-1 min-w-0 px-4 py-6 md:px-8 md:py-8">
+                  {children}
+                </main>
+              </div>
             </div>
             <Toaster />
           </TooltipProvider>

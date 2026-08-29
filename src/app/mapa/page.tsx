@@ -2,7 +2,7 @@ import { listarViagens } from "@/lib/storage/viagens";
 import { listarPessoas } from "@/lib/storage/pessoas";
 import { WorldMap, type MarcadorMapa } from "@/components/maps/WorldMap";
 import { FiltroPessoas } from "@/components/FiltroPessoas";
-import { TODOS_PAISES, paisesPorContinente } from "@/lib/domain/paises";
+import { TODOS_PAISES, paisesPorContinente, paisPorCca2 } from "@/lib/domain/paises";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +15,10 @@ export default async function MapaPage({
   const pessoaIds = sp.pessoa ? (Array.isArray(sp.pessoa) ? sp.pessoa : [sp.pessoa]) : [];
 
   const [viagens, pessoas] = await Promise.all([
-    listarViagens(["realizada", "planejada"], pessoaIds.length > 0 ? pessoaIds : undefined),
+    listarViagens(
+      ["realizada", "planejada", "desejo"],
+      pessoaIds.length > 0 ? pessoaIds : undefined
+    ),
     listarPessoas(),
   ]);
 
@@ -23,17 +26,24 @@ export default async function MapaPage({
     new Set(viagens.filter((v) => v.status === "realizada").map((v) => v.codigoPais))
   );
 
+  // Itens da wishlist não coletam latitude/longitude (só país e cidade em
+  // texto livre) — usamos o centro do país como posição aproximada no mapa.
   const marcadores: MarcadorMapa[] = viagens
-    .filter((v) => v.latitude !== null && v.longitude !== null)
-    .filter((v): v is typeof v & { status: "realizada" | "planejada" } =>
-      v.status === "realizada" || v.status === "planejada"
+    .map((v) => {
+      const centroPais = paisPorCca2(v.codigoPais);
+      const latitude = v.latitude ?? centroPais?.latitude ?? null;
+      const longitude = v.longitude ?? centroPais?.longitude ?? null;
+      return { ...v, latitude, longitude };
+    })
+    .filter((v): v is typeof v & { latitude: number; longitude: number } =>
+      v.latitude !== null && v.longitude !== null
     )
     .map((v) => ({
       id: v.id,
       cidade: v.cidade,
       nomePais: v.nomePais,
-      latitude: v.latitude!,
-      longitude: v.longitude!,
+      latitude: v.latitude,
+      longitude: v.longitude,
       status: v.status,
       dataInicio: v.dataInicio,
       dataFim: v.dataFim,
