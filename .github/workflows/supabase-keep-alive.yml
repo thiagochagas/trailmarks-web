@@ -1,12 +1,12 @@
 name: Supabase Keep-Alive
 
-# O plano gratuito do Supabase pausa o projeto após 7 dias sem atividade
-# real de banco (não basta um ping de health-check — precisa ser uma
-# consulta que toque uma tabela via PostgREST). Rodar 2x por semana fica
-# bem dentro dessa janela.
+# O plano gratuito do Supabase pausa o projeto quando ele não recebe
+# atividade suficiente de banco na semana (a documentação fala em "algumas
+# requisições por dia"). Rodar 2x por semana não bastou (o projeto pausou em
+# 18/09/2026), então rodamos a cada 6 horas.
 on:
   schedule:
-    - cron: "0 12 * * 1,4" # segunda e quinta, 12:00 UTC
+    - cron: "0 */6 * * *" # a cada 6 horas (00h, 06h, 12h e 18h UTC)
   workflow_dispatch:
 
 jobs:
@@ -18,7 +18,7 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
-          status=$(curl -s -o /tmp/resposta.json -w "%{http_code}" \
+          status=$(curl -s --max-time 30 -o /tmp/resposta.json -w "%{http_code}" \
             "${SUPABASE_URL}/rest/v1/viagens?select=*&limit=1" \
             -H "apikey: ${SUPABASE_ANON_KEY}" \
             -H "Authorization: Bearer ${SUPABASE_ANON_KEY}")
